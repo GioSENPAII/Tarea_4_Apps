@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">MapasNativosApp</string>
+
+    <!-- Pantallas principales -->
+    <string name="title_openstreetmap">OpenStreetMap</string>
+    <string name="title_google_maps">Google Maps</string>
+    <string name="title_exploration">Exploración Urbana</string>
+    <string name="title_route_generator">Generador de Rutas</string>
+
+    <!-- Mensajes de permisos -->
+    <string name="permission_location_needed">Los permisos de ubicación son necesarios para mostrar tu ubicación</string>
+    <string name="location_error">Error al obtener la ubicación</string>
+    <string name="default_location_used">No se pudo obtener la ubicación actual. Usando ubicación predeterminada.</string>
+
+    <!-- Rutas y navegación -->
+    <string name="transport_walking">A pie</string>
+    <string name="transport_bicycling">Bicicleta</string>
+    <string name="transport_driving">Auto</string>
+    <string name="select_start_point">Seleccionar inicio</string>
+    <string name="select_end_point">Seleccionar destino</string>
+    <string name="transport_mode">Modo de transporte:</string>
+
+    <!-- Exploración -->
+    <string name="exploration_progress">Progreso de exploración</string>
+    <string name="new_zone_discovered">¡Nueva zona descubierta!</string>
+    <string name="zones_discovered">¡Has descubierto %1$d nueva(s) zona(s): %2$s!</string>
+    <string name="great">¡Genial!</string>
+
+    <!-- Puntos de interés -->
+    <string name="add_poi">Añadir punto de interés</string>
+    <string name="add_poi_here">Añadir punto de interés aquí</string>
+    <string name="poi_current_location">Punto de interés en ubicación actual</string>
+    <string name="poi_name">Nombre</string>
+    <string name="poi_description">Descripción</string>
+    <string name="save">Guardar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="name_required">El nombre es obligatorio</string>
+    <string name="poi_saved">Punto de interés guardado</string>
+</resources>
