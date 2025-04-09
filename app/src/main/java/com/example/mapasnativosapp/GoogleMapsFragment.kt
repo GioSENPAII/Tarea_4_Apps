@@ -78,7 +78,11 @@ class GoogleMapsFragment : Fragment() {
             builtInZoomControls = true
             displayZoomControls = false
 
-            // Configuración importante para Google Maps
+            // Configuración adicional para que funcione Google Maps
+            javaScriptCanOpenWindowsAutomatically = true
+            useWideViewPort = true
+
+            // Configurar el User Agent para evitar restricciones
             userAgentString = "Mozilla/5.0 (Linux; Android 10; Android SDK built for x86) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
         }
 
@@ -87,6 +91,7 @@ class GoogleMapsFragment : Fragment() {
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 loadStartTime = SystemClock.elapsedRealtime()
+                Log.d("GoogleMapsFragment", "Cargando URL: $url")
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -96,6 +101,33 @@ class GoogleMapsFragment : Fragment() {
 
                 // Registrar el tiempo de carga en la actividad principal
                 (activity as? MainTabActivity)?.registerLoadTime("google", loadTime)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                Log.e("GoogleMapsFragment", "Error al cargar URL: $failingUrl, Código: $errorCode, Descripción: $description")
+                Toast.makeText(
+                    requireContext(),
+                    "Error al cargar Google Maps: $description",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            // Evitar que los links externos abran otras apps
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                // Si la URL comienza con "intent:" o "market:", bloqueamos la redirección
+                url?.let {
+                    if (it.startsWith("intent:") || it.startsWith("market:") || it.startsWith("comgooglemaps:")) {
+                        Log.d("GoogleMapsFragment", "Bloqueando redirección a: $url")
+                        return true
+                    }
+                }
+                return false
             }
         }
     }
@@ -161,9 +193,103 @@ class GoogleMapsFragment : Fragment() {
     }
 
     private fun loadMap(latitude: Double, longitude: Double) {
-        // Cargar Google Maps web
-        val googleMapsUrl = "https://www.google.com/maps?q=$latitude,$longitude&z=15"
-        webView.loadUrl(googleMapsUrl)
+        try {
+            // Usar JavaScript API de Google Maps para tener más control (incluyendo marcador de ubicación)
+            val html = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                    <style>
+                        html, body { height: 100%; margin: 0; padding: 0; }
+                        #map { width: 100%; height: 100%; }
+                    </style>
+                </head>
+                <body>
+                    <div id="map"></div>
+                    <script>
+                        // Función que inicializa el mapa cuando Google Maps API está cargada
+                        function initMap() {
+                            // Crear un objeto de mapa centrado en la ubicación
+                            const map = new google.maps.Map(document.getElementById("map"), {
+                                center: { lat: $latitude, lng: $longitude },
+                                zoom: 15,
+                                mapTypeControl: true,
+                                streetViewControl: true,
+                                zoomControl: true,
+                                fullscreenControl: true
+                            });
+                            
+                            // Agregar marcador de ubicación
+                            const marker = new google.maps.Marker({
+                                position: { lat: $latitude, lng: $longitude },
+                                map: map,
+                                title: "Mi ubicación",
+                                // Usar icono de ubicación azul
+                                icon: {
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    scale: 10,
+                                    fillColor: "#4285F4",
+                                    fillOpacity: 1,
+                                    strokeColor: "#FFFFFF",
+                                    strokeWeight: 2
+                                },
+                                // Añadir animación de rebote
+                                animation: google.maps.Animation.DROP
+                            });
+                            
+                            // Añadir círculo para mostrar precisión aproximada (100 metros)
+                            const locationCircle = new google.maps.Circle({
+                                strokeColor: "#4285F4",
+                                strokeOpacity: 0.8,
+                                strokeWeight: 2,
+                                fillColor: "#4285F4",
+                                fillOpacity: 0.1,
+                                map: map,
+                                center: { lat: $latitude, lng: $longitude },
+                                radius: 100
+                            });
+                            
+                            // Mostrar información al hacer clic en el marcador
+                            const infowindow = new google.maps.InfoWindow({
+                                content: "<div><strong>Mi ubicación actual</strong></div>"
+                            });
+                            
+                            marker.addListener("click", () => {
+                                infowindow.open(map, marker);
+                            });
+                            
+                            // Abrir automáticamente el InfoWindow al cargar
+                            infowindow.open(map, marker);
+                        }
+                    </script>
+                    <script 
+                        src="https://maps.googleapis.com/maps/api/js?key=&callback=initMap&v=weekly" 
+                        async
+                    ></script>
+                </body>
+                </html>
+            """.trimIndent()
+
+            // Cargar el HTML en el WebView
+            webView.loadDataWithBaseURL(
+                "https://maps.google.com/",
+                html,
+                "text/html",
+                "UTF-8",
+                null
+            )
+
+            Log.d("GoogleMapsFragment", "Cargando Google Maps con JavaScript API en: $latitude, $longitude")
+        } catch (e: Exception) {
+            Log.e("GoogleMapsFragment", "Error al cargar el mapa: ${e.message}")
+            Toast.makeText(
+                requireContext(),
+                "Error al cargar Google Maps: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     override fun onDestroy() {
